@@ -7,47 +7,38 @@
   packages = [
     pkgs.python3
     pkgs.jdk20
+    pkgs.cmake               # Required for Linux development
+    pkgs.ninja               # Required for Linux development
+    pkgs.pkg-config          # Required for Linux development
+    pkgs.clang               # Required for Linux development
+    pkgs.gtk3                # GTK 3 library
+    pkgs.gtk3.dev            # GTK 3 development library for Linux toolchain
+    pkgs.pango               # Pango library for text rendering
+    pkgs.cairo               # Cairo library for graphics rendering
+    pkgs.harfbuzz            # HarfBuzz library for text shaping
+    pkgs.atk                 # ATK library for accessibility support
+    pkgs.gdk-pixbuf          # GdkPixbuf library for image loading
+    pkgs.glib                # GLib library for system-level utilities (includes GIO)
+    pkgs.sudo                # Add sudo package
+    pkgs.gst_all_1.gstreamer # Provides libgstapp-1.0.so.0
+    pkgs.gcc                 # Add gcc for scikit-build
   ];
 
-  # environment variables
-  env = {
-    VENV_DIR = ".venv";
-    MAIN_FILE = "main.py";
-  };
-
   idx = {
-    # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
-      "ms-python.python"
+      "ms-python.python",
       "ms-python.debugpy"
     ];
 
     workspace = {
-      # Runs when a workspace is first created with this `dev.nix` file
       onCreate = {
-        # create a python virtual environment
         create-venv = ''
-          python -m venv $VENV_DIR
+          export VENV_DIR=".venv"
+          export MAIN_FILE="main.py"
+          export LD_LIBRARY_PATH=/nix/store/b52h5nwsagbqnpfpv6aysr3b5ylgva7z-gst-plugins-base-1.22.8/lib:$LD_LIBRARY_PATH
 
-          if [ ! -f requirements.txt ]; then
-            echo "requirements.txt not found. Creating one with flet..."
-            echo "flet" > requirements.txt
-          fi
-
-          # activate virtual env and install requirements
-          source $VENV_DIR/bin/activate
-          pip install -r requirements.txt
-        '';
-
-        # Open editors for the following files by default, if they exist:
-        default.openFiles = [ "README.md" "requirements.txt" "$MAIN_FILE" ];
-      };
-
-      onStart = {
-        # check the existence of the venv and create if non-existent
-        check-venv-existence = ''
-          if [ ! -d $VENV_DIR ]; then
-            echo "Virtual environment not found. Creating one..."
+          # Check if the virtual environment already exists
+          if [ ! -d "$VENV_DIR" ]; then
             python -m venv $VENV_DIR
           fi
 
@@ -56,30 +47,28 @@
             echo "flet" > requirements.txt
           fi
 
-          # activate virtual env and install requirements
+          # Activate the virtual environment and update pip
           source $VENV_DIR/bin/activate
+          pip install --upgrade pip
           pip install -r requirements.txt
         '';
 
-        # Open editors for the following files by default, if they exist:
-        default.openFiles = [ "README.md" "requirements.txt" "$MAIN_FILE" ];
+        default.openFiles = [ "README.md", "requirements.txt", "$MAIN_FILE" ];
       };
     };
 
-    # Enable web preview
     previews = {
       enable = true;
       previews = {
         web = {
-          # cwd = "subfolder"
           command = [
-            "bash"
-            "-c"
+            "bash",
+            "-c",
             ''
-            # activate the virtual environment
+            export VENV_DIR=".venv"
+            export MAIN_FILE="main.py"
+            export LD_LIBRARY_PATH=/nix/store/b52h5nwsagbqnpfpv6aysr3b5ylgva7z-gst-plugins-base-1.22.8/lib:$LD_LIBRARY_PATH
             source $VENV_DIR/bin/activate
-            
-            # run app in hot reload mode on a port provided by IDX
             flet run $MAIN_FILE --web --port $PORT
             ''
           ];
